@@ -1,0 +1,33 @@
+service: paymentresponse
+
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  environment:
+    accessKeyId: ${file(./env.yml):accessKeyId}
+    secretAccessKey: ${file(./env.yml):secretAccessKey}
+    region: ${file(./env.yml):region}
+    bucket: ${file(./env.yml):bucket}
+    connectionLimit: 1500
+    host: ${file(./env.yml):host}
+    user: ${file(./env.yml):user}
+    password: ${file(./env.yml):password}
+    database: ${file(./env.yml):database}
+    exportedexcel: ${file(./env.yml):exportedexcel}
+  memorySize: 2024
+  stage: dev
+  timeout: 900
+
+functions:
+  paymentresponse:
+    handler: handler.paymentresponse
+    events:
+      - http:
+          path: paymentresponse
+          method: get
+
+plugins:
+  - serverless-offline
+

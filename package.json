@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "aws-sdk": "^2.1647.0",
+    "dotenv": "^16.4.5",
+    "f": "^1.4.0",
+    "graceful-fs": "^4.2.11",
+    "install": "^0.13.0",
+    "mysql": "^2.18.1",
+    "npm": "^10.8.1",
+    "p-limit": "^5.0.0",
+    "process": "^0.11.10",
+    "serverless-offline": "^13.6.0",
+    "xlsx": "^0.18.5",
+    "xlsx-populate": "^1.21.0"
+  }
+}

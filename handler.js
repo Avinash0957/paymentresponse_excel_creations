@@ -21,6 +21,8 @@ module.exports.paymentresponse = async (event) => {
     console.log("Paid Result", Result);
     const DataHRB = await FeatchPaymnetDataHRB();
     console.log("HRB Result", DataHRB);
+    const Summary = await FeatchPaymnetDataSummary();
+    console.log("Summary Result" , Summary);
   } catch (error) {
     console.log(error);
   }
@@ -61,8 +63,8 @@ async function GenrateExcel(ViewDataArray) {
 
       // Set the column names
       columnNames.forEach((header, index) => {
-        const capitalizedHeader = header.charAt(0).toUpperCase() + header.slice(1);
-        newSheet.cell(1, index + 1).value(capitalizedHeader.replace("_"," "));
+        //const capitalizedHeader = header.charAt(0).toUpperCase() + header.slice(1);
+        newSheet.cell(1, index + 1).value(header);
       });
 
       // Add the data
@@ -144,7 +146,7 @@ async function FeatchPaymnetData() {
   return new Promise(async (resolve, rejects) => {
       const timestamp = Date.now();
     const date = new Date(timestamp);
-    let sqlquery = `select sale_id as Sale_id, product_id as Product_Id,product_name as Product_Name,payment_amount As Payment_Amount ,payer_email As Email, payer_address_city as City,payer_address_state as State,payer_address_zip as ZipCode,payer_phone as Purchase_Phone, DATE_FORMAT(payment_time, '%m/%d/%Y %H:%i') AS Date,receiver as  Receiver,  role as Role,member_id as Member_id,amount as Amount,paid as Paid,transaction_id as Transcation_Id from ETX_Prod where payment_amount != 0 and  payment_time >= DATE_SUB(NOW(), INTERVAL 24 Hour);`;
+    let sqlquery = `select sale_id as sale_id, product_id as product_id, product_name as product_name, payment_amount as payment_amount, payer_first_name as first_name, payer_last_name as last_name, payer_phone as phone, payer_email as email, payer_address_city as city, payer_address_state as state, payer_address_zip as zipcode, DATE_FORMAT(payment_time, '%m/%d/%Y %H:%i') as date, receiver as receiver, role as role, member_id as member_id, amount as amount, paid as paid, transaction_id as transaction_id,broker_id as institution_code from ETX_Prod where payment_amount != 0 and payment_time >= DATE_SUB(NOW(), INTERVAL 24 hour);`;
             pool.getConnection(async (err, connection) => {
               if (err) {
                 console.log(err);
@@ -193,8 +195,7 @@ async function FeatchPaymnetDataHRB() {
   return new Promise(async (resolve, rejects) => {
       const timestamp = Date.now();
     const date = new Date(timestamp);
-    let sqlquery = `select sale_id as Sale_id, product_id as Product_Id,product_name as Product_Name,payment_amount As Payment_Amount ,payer_email As Email, payer_address_city as City,payer_address_state as State,payer_address_zip as ZipCode,payer_phone as Purchase_Phone, DATE_FORMAT(payment_time, '%m/%d/%Y %H:%i') AS Date,receiver as  Receiver,  role as Role,member_id as Member_id,amount as Amount,paid as Paid,transaction_id as Transcation_Id
-      from ETX_Prod where payment_amount = 0 and  payment_time >= DATE_SUB(NOW(), INTERVAL 24 Hour);`;
+    let sqlquery = `select sale_id as sale_id, product_id as product_id, product_name as product_name, payment_amount as payment_amount, payer_first_name as first_name, payer_last_name as last_name, payer_phone as phone, payer_email as email, payer_address_city as city, payer_address_state as state, payer_address_zip as zipcode, DATE_FORMAT(payment_time, '%m/%d/%Y %H:%i') as date, receiver as receiver, role as role, member_id as member_id, amount as amount, paid as paid, transaction_id as transaction_id,broker_id as institution_code from ETX_Prod where payment_amount = 0 and payment_time >= DATE_SUB(NOW(), INTERVAL 24 hour);`;
             pool.getConnection(async (err, connection) => {
               if (err) {
                 console.log(err);
@@ -238,6 +239,56 @@ async function FeatchPaymnetDataHRB() {
   });
 }
 
+async function FeatchPaymnetDataSummary() {
+  return new Promise(async (resolve, rejects) => {
+      const timestamp = Date.now();
+    const date = new Date(timestamp);
+    let sqlquery = `select payer_first_name as first_name, payer_last_name as last_name,
+                    payer_email as emails, payer_phone as phone , broker_id as institution_code
+                    from ETX_Prod where payment_time >= DATE_SUB(NOW(), INTERVAL 24 Hour);`;
+            pool.getConnection(async (err, connection) => {
+              if (err) {
+                console.log(err);
+                return rejects(err);
+              }
+              await connection.query(sqlquery, async (error, results, fields) => {
+                connection.release();
+                if (error) {
+                  console.error("Error querying MySQL:", error);
+                  return rejects(error);
+                }
+              
+                const timestamp = Date.now();
+                const today = new Date(timestamp);
+                const yyyy = today.getFullYear();
+                const mm = today.getMonth() + 1;
+                const dd = today.getDate();
+                //Xullu Customer Accounts 7.16.2024
+                const filename = `Xullu_Customer_Accounts_${mm}.${dd}.${yyyy}`;
+                console.log("excel_name",filename)
+                console.log(filename);
+                if (results.length > 0) {
+                  const result = await results;
+                  const columnNames = await fields.map((field) => field.name);
+                  let ViewDataArray = {
+                    filename: filename,
+                    results: result,
+                    columnNames: columnNames
+                  };
+                  await GenrateExcel(ViewDataArray);
+                  return resolve({
+                    filename: filename,
+                    results: result,
+                    columnNames: columnNames,
+                  });
+                } else {
+                  const logmessege = `No Data Found !`;
+                  resolve(logmessege);
+                }
+              });
+            });
+  });
+}
 module.exports = {
   paymentresponse: module.exports.paymentresponse,
   GenrateExcel,
